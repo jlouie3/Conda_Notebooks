@@ -1,0 +1,14 @@
+What is a recommender system?
+- Software tools and techniques used to suggest items to a user
+
+Why use one?
+- Service providers
+  -
+- Users
+  -
+
+Real world examples
+- Amazon
+- Netflix
+- YouTube
+- Google/Facebook Ads
