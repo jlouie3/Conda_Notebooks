@@ -3,9 +3,19 @@ What is a recommender system?
 
 Why use one?
 - Service providers
-  -
+  - Increase sales (show items that suit users needs/wants, increase conversion rate (# of users who buy vs users who just browse))
+  - Sell more diverse items (allows diverse inventory to still be effective)
+  - Customer loyalty (personalization => better suggestions => customer feels valued)
+  - Better understanding of what the user wants ()
 - Users
-  -
+  - Find good items
+  - Recommend a bundle (items that go well together)
+  - Just browse 
+  - Improve profile through repeated user input over time (e.g. Pandora)
+  - Express self, help others, influences others (via review/ratings system)
+- Bottom line
+  - Increase sales
+  - Improve UX
 
 Real world examples
 - Amazon
