@@ -1,3 +1,7 @@
+# ignore any directories that start with underscore char
+_*/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

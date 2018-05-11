@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  </head>
+  
+  <body>
+    UserID:
+    <br>
+    <input type="text" id="userID" value='10058'>
+    <br>
+    Number of neighbors:
+    <br>
+    <input type="text" id="k" value='10'>
+    <br>
+    Number of recommendations:
+    <br>
+    <input type="text" id="numRecs" value='10'>
+    <br>
+    <br>
+    <input type="button" id="btn" value='Get Recommendations'>
+    <br>
+    <br>
+    <br>
+    <div>
+        <pre id="results">
+
+        </pre>
+    </div>
+
+  </body>
+  <script>
+    document.getElementById('btn').addEventListener('click', function(){
+      document.getElementById('results').innerText = '';
+
+      var userID = document.getElementById('userID').value;
+      var k = document.getElementById('k').value;
+      var numRecs = document.getElementById('numRecs').value;
+      
+      var start = new Date();
+      var url = `http://127.0.0.1:5000/recommend/${userID}/${k}/${numRecs}`;
+      console.log('Request sent: ' + url);
+
+      $.get(url, function(data){
+        var end = new Date();
+        console.log(`Response received. Time elapsed: ${(end-start)/1000}`);
+        var formattedData = JSON.parse(data);
+        var formattedData = JSON.stringify(formattedData,null,4)
+        document.getElementById('results').innerText = formattedData;
+      });
+
+    });
+  </script>
+</html>
