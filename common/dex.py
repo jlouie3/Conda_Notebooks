@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from functools import reduce
 
+
 def get_data_quality_report(df: pd.DataFrame):
     """
     Create data quality report for both continuous and categorical features
@@ -61,6 +62,16 @@ def get_data_quality_report(df: pd.DataFrame):
     categorical_dqr = categorical_dqr.append(nulls[categorical_cols])
     categorical_dqr = categorical_dqr.append(nulls_pct[categorical_cols])
     categorical_dqr = categorical_dqr.append(cardinality[categorical_cols])
+
+    '''
+    Apply formatting
+    '''
+    def two_decimal_precision(x):
+        return "%.2F" % x
+    continuous_dqr.loc['nulls pct'] = continuous_dqr.loc['nulls pct'].apply(two_decimal_precision)
+    categorical_dqr.loc['nulls pct'] = categorical_dqr.loc['nulls pct'].apply(two_decimal_precision)
+    categorical_dqr.loc['mode pct'] = categorical_dqr.loc['mode pct'].apply(two_decimal_precision)
+    categorical_dqr.loc['2nd mode pct'] = categorical_dqr.loc['2nd mode pct'].apply(two_decimal_precision)
 
     '''
     Identify columns that were not listed as continuous or categorical
