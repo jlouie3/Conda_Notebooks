@@ -1,6 +1,5 @@
 # Ignore all directories called "data"
-data/
-/data/
+**/data/
 
 # ignore any directories that start with underscore char
 _*/
