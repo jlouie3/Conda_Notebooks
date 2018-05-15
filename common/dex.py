@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from functools import reduce
@@ -74,6 +75,34 @@ def get_data_quality_report(df: pd.DataFrame):
     categorical_dqr.loc['2nd mode pct'] = categorical_dqr.loc['2nd mode pct'].apply(two_decimal_precision)
 
     '''
+    Reorder rows
+    '''
+    continuous_dqr = continuous_dqr.reindex([
+        'count',
+        'nulls',
+        'nulls pct',
+        'std',
+        'min',
+        '25%',
+        '50%',
+        'mean',
+        '75%',
+        'max',
+        'cardinality'])
+
+    categorical_dqr = categorical_dqr.reindex([
+        'count',
+        'nulls',
+        'nulls pct',
+        'mode',
+        'mode count',
+        'mode pct',
+        '2nd mode',
+        '2nd mode count',
+        '2nd mode pct',
+        'cardinality'])
+
+    '''
     Identify columns that were not listed as continuous or categorical
     '''
     error_cols = list(set(df.columns).difference(set(continuous_cols + categorical_cols)))
@@ -119,3 +148,19 @@ def set_columns_to_category_dtype(df: pd.DataFrame, cols=None):
     else:
         for col in cols:
             df[col] = df[col].astype('category')
+
+
+def enumerate_column(s: pd.Series):
+    """
+    Maps values in a pd.Series object to an integer value. Mapping is saved to a local file.
+    :param s: series to be mapped
+    :return: series with integer-mapped values
+    """
+    list_of_unique_values = list(s.unique())
+    file = open(os.path.join(os.getcwd(), s.name + '_mapping.txt'), 'w')
+    for val in list_of_unique_values:
+        file.write(str(val) + '\t' + str(list_of_unique_values.index(val)) + os.linesep)
+    file.close()
+
+    return pd.to_numeric(s.apply(lambda x: list_of_unique_values.index(x)))
+
