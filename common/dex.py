@@ -4,6 +4,9 @@ import numpy as np
 from functools import reduce
 
 
+#############################
+#    DATAFRAME FUNCTIONS    #
+#############################
 def get_data_quality_report(df: pd.DataFrame):
     """
     Create data quality report for both continuous and categorical features
@@ -110,6 +113,35 @@ def get_data_quality_report(df: pd.DataFrame):
     return continuous_dqr, categorical_dqr, error_cols
 
 
+def set_columns_to_category_dtype(df: pd.DataFrame, cols=None):
+    # if no columns are passed in, infer categorical columns
+    if cols is None:
+        cols_to_change = [col_name for col_name in df.dtypes.where(df.dtypes == 'object').dropna().index if col_name != df.index.name]
+        for col in cols_to_change:
+            df[col] = df[col].astype('category')
+    else:
+        for col in cols:
+            df[col] = df[col].astype('category')
+
+
+def get_continuous_data(df: pd.DataFrame, auto_fillna: bool = True):
+    if auto_fillna:
+        return df.select_dtypes(include=[np.number]).fillna(0)
+    else:
+        return df.select_dtypes(include=[np.number])
+
+
+def get_categorical_data(df: pd.DataFrame, auto_fillna: bool = True):
+    if auto_fillna:
+        return df.select_dtypes(include=['category']).fillna('N/A')
+    else:
+        return df.select_dtypes(include=['category'])
+
+
+##########################
+#    SERIES FUNCTIONS    #
+##########################
+
 def get_mode_and_second_mode(s: pd.Series):
     """
     Returns mode, second mode if available, and counts/percentage for both
@@ -139,17 +171,6 @@ def get_mode_and_second_mode(s: pd.Series):
     return mode_df
 
 
-def set_columns_to_category_dtype(df: pd.DataFrame, cols=None):
-    # if no columns are passed in, infer categorical columns
-    if cols is None:
-        cols_to_change = [col_name for col_name in df.dtypes.where(df.dtypes == 'object').dropna().index if col_name != df.index.name]
-        for col in cols_to_change:
-            df[col] = df[col].astype('category')
-    else:
-        for col in cols:
-            df[col] = df[col].astype('category')
-
-
 def enumerate_column(s: pd.Series):
     """
     Maps values in a pd.Series object to an integer value. Mapping is saved to a local file.
@@ -163,4 +184,5 @@ def enumerate_column(s: pd.Series):
     file.close()
 
     return pd.to_numeric(s.apply(lambda x: list_of_unique_values.index(x)))
+
 
