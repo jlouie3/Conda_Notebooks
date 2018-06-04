@@ -113,7 +113,21 @@ def get_data_quality_report(df: pd.DataFrame):
     return continuous_dqr, categorical_dqr, error_cols
 
 
-def set_columns_to_category_dtype(df: pd.DataFrame, cols=None):
+def move_label_column_to_front(df: pd.DataFrame, label_name: str):
+    columns = list(df.columns)
+    columns.insert(0, columns.pop(columns.index(label_name)))
+    return df[columns]
+
+
+def set_columns_to_category_dtype(df: pd.DataFrame, cols: list=None):
+    """
+    Sets specified columns in df to 'category' dtype. If no columns are passed in, function will attempt to change all
+    columns of 'object' dtype to 'category' dtype
+
+    :param df: pd.DataFrame whose columns will be modified
+    :param cols: list of column names to change type
+    :return: None
+    """
     # if no columns are passed in, infer categorical columns
     if cols is None:
         cols_to_change = [col_name for col_name in df.dtypes.where(df.dtypes == 'object').dropna().index if col_name != df.index.name]
@@ -124,18 +138,72 @@ def set_columns_to_category_dtype(df: pd.DataFrame, cols=None):
             df[col] = df[col].astype('category')
 
 
-def get_continuous_data(df: pd.DataFrame, auto_fillna: bool = True):
+def get_numeric_data(df: pd.DataFrame, auto_fillna: bool=True):
+    """
+    Returns all continuous/numeric data in dataframe
+
+    :param df: pd.DataFrame to get numeric data from
+    :param auto_fillna: flag to autofill null values with 0
+    # :return: pd.DataFrame of all continuous/numeric data
+    """
     if auto_fillna:
         return df.select_dtypes(include=[np.number]).fillna(0)
     else:
         return df.select_dtypes(include=[np.number])
 
 
-def get_categorical_data(df: pd.DataFrame, auto_fillna: bool = True):
+def get_categorical_data(df: pd.DataFrame, auto_fillna: bool=True):
+    """
+    Returns all categorical data in dataframe
+
+    :param df: pd.DataFrame to get categorical data from
+    :param auto_fillna: flag to autofill null values with 'N/A' string
+    # :return: pd.DataFrame of all categorical data
+    """
     if auto_fillna:
         return df.select_dtypes(include=['category']).fillna('N/A')
     else:
         return df.select_dtypes(include=['category'])
+
+
+def get_numeric_column_names(df: pd.DataFrame):
+    """
+    Get names of all columns containing numeric data
+
+    :param df: pd.DataFrame to analyze
+    :return: list of columns names containing numeric data
+    """
+    return df.columns[[str(dt) not in ['object', 'category'] for dt in df.dtypes]]
+
+
+def get_categorical_column_names(df: pd.DataFrame):
+    """
+    Get names of all columns containing categorical data
+
+    :param df: pd.DataFrame to analyze
+    :return: list of columns names categorical numeric data
+    """
+    return df.columns[[str(dt) in ['object', 'category'] for dt in df.dtypes]]
+
+
+def enumerate_categorical_columns(df: pd.DataFrame, columns: list=None):
+    """
+    Enumerates categorical values in specified columns. If no columns are specified, then all columns
+    of 'object' or 'categorical' dtypes will be enumerated.
+
+    :param df: pd.DataFrame to modify
+    :param columns: list of column names to enumerate
+    :return: pd.DataFrame of all enumerated data
+    """
+    if columns is None:
+        columns = get_categorical_column_names(df)
+
+    enumerated_data = []
+    for column in columns:
+        enumerated_data.append(enumerate_series(df[column]))
+
+    enumerated_df = reduce(lambda x, y: x.merge(y, left_index=True, right_index=True), enumerated_data)
+    return enumerated_df
 
 
 ##########################
@@ -171,7 +239,7 @@ def get_mode_and_second_mode(s: pd.Series):
     return mode_df
 
 
-def enumerate_column(s: pd.Series):
+def enumerate_series(s: pd.Series):
     """
     Maps values in a pd.Series object to an integer value. Mapping is saved to a local file.
     :param s: series to be mapped
