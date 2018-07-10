@@ -1,0 +1,3 @@
+Nondemented	0
+Demented	1
+Converted	2
