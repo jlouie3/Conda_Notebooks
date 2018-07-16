@@ -112,9 +112,8 @@ class Q_Learner:
             has_cash = state['hasCash']
             has_stock = state['hasStock']
 
-        if self.state_index < self.num_states:
-            next_state['hasCash'] = has_cash
-            next_state['hasStock'] = has_stock
+        next_state['hasCash'] = has_cash
+        next_state['hasStock'] = has_stock
 
         return next_state
 
@@ -166,8 +165,16 @@ class Q_Learner:
     def get_exploitation_action(self, state: pd.Series):
         q_values = {}
         for action in self.actions:
-            state_action_str = self.state_action_str(state, action)
-            q_values[action] = self.q_table[state_action_str]
+            try:
+                state_action_str = self.state_action_str(state, action)
+                q_values[action] = self.q_table[state_action_str]
+            except KeyError:
+                print('KEY ERROR')
+                print('Actions: ', self.actions)
+                print('action: ', action)
+                print('state: ', json.dumps(self.state.to_dict()))
+                print('q table: ', json.dumps(self.q_table))
+                print('q values: ', json.dumps(q_values))
 
         # Return action that yields max q-value from this state
         return max(q_values, key=q_values.get)
