@@ -35,7 +35,6 @@ class Q_Learner:
     cash = 0
     stock = 0
     initial_portfolio_value = 0
-    portfolio_value = 0
 
     # State advancement variables
     state_df = None
@@ -92,9 +91,9 @@ class Q_Learner:
     def get_portfolio_value(self):
         return self.cash + self.stock * self.reward_df.iloc[self.state_index]['close']
 
-    def reward(self):
+    def reward(self, prev_portfolio_value, current_portfolio_value):
         # Cumulative return based on portfolio value
-        return self.get_portfolio_value() / self.initial_portfolio_value
+        return (current_portfolio_value - prev_portfolio_value) / prev_portfolio_value
 
     def next_state_exists(self):
         return self.state_index < self.num_states - 1
@@ -118,6 +117,8 @@ class Q_Learner:
         return next_state
 
     def go_to_next_state(self, action: str):
+        prev_portfolio_value = self.get_portfolio_value()
+
         # Apply action to portfolio
         stock_price = self.reward_df.iloc[self.state_index]['close']
         if action == self.BUY:
@@ -134,9 +135,10 @@ class Q_Learner:
         self.state = self.get_next_state(self.state, action)
         self.state_index += 1
         self.actions = self.get_possible_actions(self.state)
+        current_portfolio_value = self.get_portfolio_value()
 
         # Calculate and return reward for entering this state
-        reward = self.reward()
+        reward = self.reward(prev_portfolio_value, current_portfolio_value)
         return reward
 
     def get_possible_actions(self, state: pd.Series):
@@ -148,7 +150,7 @@ class Q_Learner:
         if state['hasStock']:
             actions.append(self.SELL)
 
-        self.initialize_q_values(state, self.actions)
+        self.initialize_q_values(state, actions)
 
         return actions
 
