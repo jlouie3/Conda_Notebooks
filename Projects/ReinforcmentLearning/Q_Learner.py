@@ -27,7 +27,7 @@ class Q_Learner:
     alpha = .1
     gamma = .9
     p_explore = .1
-    q_table = {}
+    q_table = {}    # state_str: {action: q-value}
 
     # Reward function variables
     reward_df = None
@@ -71,7 +71,7 @@ class Q_Learner:
         self.state['hasStock'] = False
         self.actions = self.get_possible_actions(self.state)
 
-    def train(self, iterations: int, dyna_iterations: int = 400):
+    def train(self, iterations: int = 100, dyna_iterations: int = 500):
         for iteration in range(iterations):
             self.initialize_state()
             while self.next_state_exists():
@@ -79,13 +79,15 @@ class Q_Learner:
                 action, action_type = self.get_action()
                 reward = self.go_to_next_state(action)
                 self.update_q(prev_state, action, self.state, reward)
+
+                self.dyna_planning(dyna_iterations)
             print(self.q_table)
 
     def update_q(self, state: pd.Series, action: str, next_state: pd.Series, reward: float):
         # Bellman Equation
         # q[s][a] = q[s][a] + alpha[r + g*max_a'(q[s'][a']) - q[s][a]]
-        q = self.q_table[self.state_action_str(state, action)]
-        self.q_table[self.state_action_str(state, action)] =\
+        q = self.q_table[self.state_str(state)][action]
+        self.q_table[self.state_str(state)][action] =\
             q + self.alpha * (reward + self.gamma * (self.get_max_q_value(next_state)) - q)
 
     def get_portfolio_value(self):
@@ -165,21 +167,8 @@ class Q_Learner:
         return action, action_type
 
     def get_exploitation_action(self, state: pd.Series):
-        q_values = {}
-        for action in self.actions:
-            try:
-                state_action_str = self.state_action_str(state, action)
-                q_values[action] = self.q_table[state_action_str]
-            except KeyError:
-                print('KEY ERROR')
-                print('Actions: ', self.actions)
-                print('action: ', action)
-                print('state: ', json.dumps(self.state.to_dict()))
-                print('q table: ', json.dumps(self.q_table))
-                print('q values: ', json.dumps(q_values))
-
-        # Return action that yields max q-value from this state
-        return max(q_values, key=q_values.get)
+        action_values = self.q_table[self.state_str(state)]
+        return max(action_values, key=action_values.get)
 
     def get_exploration_action(self, exploit_action: str):
         actions = self.actions.copy()
@@ -187,17 +176,41 @@ class Q_Learner:
         return random.choice(actions)
 
     def initialize_q_values(self, state: pd.Series, actions: list):
-        for action in actions:
-            state_action_str = self.state_action_str(state, action)
+        state_str = self.state_str(state)
 
+        for action in actions:
             # Initialize with tiny value
-            if state_action_str not in self.q_table:
-                self.q_table[state_action_str] = random.uniform(0, 1) / 1000000000
+            if state_str not in self.q_table:
+                self.q_table[state_str] = {}
+            if action not in self.q_table[state_str]:
+                self.q_table[state_str][action] = random.uniform(0, 1) / 1000000000
 
     def get_max_q_value(self, state: pd.Series):
         action = self.get_exploitation_action(state)
-        return self.q_table[self.state_action_str(state, action)]
+        return self.q_table[self.state_str(state)][action]
 
-    def state_action_str(self, state: pd.Series, action: str):
-        state_str = json.dumps(state.to_dict(), sort_keys=True)
-        return str((state_str, action))
+    def state_str(self, state: pd.Series):
+        return json.dumps(state.to_dict(), sort_keys=True)
+
+    def dyna_planning(self, steps):
+        for i in range(steps):
+            states_visited = self.q_table.keys()
+            state = random.choice(states_visited)
+
+            actions_taken = self.q_table[state].keys()
+            action = random.choice(actions_taken)
+
+            next_state, reward = self.go_to_next_state(action)
+            self.update_q(state, action, next_state, reward)
+
+    def export_q_table(self):
+        with open('q_table.txt') as f:
+            f.write(json.dumps(self.q_table))
+
+    def export_policy(self):
+        policy = {}
+        for state in self.q_table:
+            policy[state] = max(self.q_table[state], keys=self.q_table[state].get)
+
+        with open('policy.txt') as f:
+            f.write(json.dumps(policy))
