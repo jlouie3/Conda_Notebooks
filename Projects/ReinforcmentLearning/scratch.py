@@ -67,9 +67,7 @@ reward_df = data[['close']]
 ########################
 ########################
 
-
-
 from Projects.ReinforcmentLearning.Q_Learner import Q_Learner
 q_learner = Q_Learner(state_df=state_df.iloc[20:25], reward_df=reward_df.iloc[20:25])
-q_learner.train(100,0)
-
+q_learner.train(50, 400)
+q_learner.export_policy('policy.txt')

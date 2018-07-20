@@ -73,6 +73,7 @@ class Q_Learner:
 
     def train(self, iterations: int = 100, dyna_iterations: int = 500):
         for iteration in range(iterations):
+            print(iteration)
             self.initialize_state()
             while self.next_state_exists():
                 prev_state = self.state.copy()
@@ -81,7 +82,7 @@ class Q_Learner:
                 self.update_q(prev_state, action, self.state, reward)
 
                 self.dyna_planning(dyna_iterations)
-            print(self.q_table)
+            #print(self.q_table)
 
     def update_q(self, state: pd.Series, action: str, next_state: pd.Series, reward: float):
         # Bellman Equation
@@ -192,25 +193,27 @@ class Q_Learner:
     def state_str(self, state: pd.Series):
         return json.dumps(state.to_dict(), sort_keys=True)
 
-    def dyna_planning(self, steps):
-        for i in range(steps):
-            states_visited = self.q_table.keys()
-            state = random.choice(states_visited)
+    def dyna_planning(self, iterations):
+        for i in range(iterations):
+            states_visited = list(self.q_table.keys())
+            self.state = random.choice(states_visited)
+            prev_state = self.state
 
-            actions_taken = self.q_table[state].keys()
+            actions_taken = list(self.q_table[state].keys())
             action = random.choice(actions_taken)
 
-            next_state, reward = self.go_to_next_state(action)
-            self.update_q(state, action, next_state, reward)
+            reward = self.go_to_next_state(action)
+            self.update_q(prev_state, action, self.state, reward)
 
-    def export_q_table(self):
-        with open('q_table.txt') as f:
+    def export_q_table(self, file_name: str):
+        with open(file_name, 'w+') as f:
             f.write(json.dumps(self.q_table))
 
-    def export_policy(self):
+    def export_policy(self, file_name: str):
         policy = {}
         for state in self.q_table:
-            policy[state] = max(self.q_table[state], keys=self.q_table[state].get)
+            policy[state] = max(self.q_table[state], key=self.q_table[state].get)
 
-        with open('policy.txt') as f:
-            f.write(json.dumps(policy))
+        with open(file_name, 'w+') as f:
+            f.write(json.dumps(policy, sort_keys=True))
+
