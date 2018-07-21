@@ -10,6 +10,11 @@ import json
 import random
 
 
+'''
+Learning cycle iterates through state_df.index
+
+'''
+
 class Q_Learner:
     ###################
     # Define constants
@@ -75,12 +80,17 @@ class Q_Learner:
         for iteration in range(iterations):
             print(iteration)
             self.initialize_state()
-            while self.next_state_exists():
+            for index in self.state_df:
+                self.state_index = index
+            #while self.next_state_exists():
                 prev_state = self.state.copy()
                 action, action_type = self.get_action()
                 reward = self.go_to_next_state(action)
                 self.update_q(prev_state, action, self.state, reward)
 
+                # Dynamically set the number of dyna iterations
+                # number_of_states * estimated_num_actions_per_state * 2
+                dyna_iterations = len(self.q_table) * 2 * 2
                 self.dyna_planning(dyna_iterations)
             #print(self.q_table)
 
@@ -193,13 +203,18 @@ class Q_Learner:
     def state_str(self, state: pd.Series):
         return json.dumps(state.to_dict(), sort_keys=True)
 
+    def str_to_state(self, state_str: str):
+        return pd.Series(json.loads(state_str))
+
     def dyna_planning(self, iterations):
+        print('\tDyna iterations: ', iterations)
         for i in range(iterations):
             states_visited = list(self.q_table.keys())
-            self.state = random.choice(states_visited)
+            state_str = random.choice(states_visited)
+            self.state = self.str_to_state(state_str)
             prev_state = self.state
 
-            actions_taken = list(self.q_table[state].keys())
+            actions_taken = list(self.q_table[state_str].keys())
             action = random.choice(actions_taken)
 
             reward = self.go_to_next_state(action)
