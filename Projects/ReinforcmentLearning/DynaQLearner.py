@@ -94,7 +94,7 @@ class DynaQLearner:
             # number_of_states * estimated_num_actions_per_state * 2
             dyna_iterations = len(self.q_table) * 2 * 2
             self.dyna_planning(dyna_iterations)
-            #print(self.q_table)
+            # print(self.q_table)
 
     def update_q(self, state: pd.Series, action: str, next_state: pd.Series, reward: float):
         # Bellman Equation
@@ -113,8 +113,8 @@ class DynaQLearner:
     def next_state_exists(self):
         return self.state_index < self.num_states - 1
 
-    def get_next_state(self, state: pd.Series, action: str):
-        next_state = self.state_df.iloc[self.state_index+1]
+    def get_next_state(self, state_index: int, state: pd.Series, action: str):
+        next_state = self.state_df.iloc[state_index+1]
 
         if action == self.BUY:
             has_cash = False
@@ -138,7 +138,7 @@ class DynaQLearner:
         self.cash, self.stock = self.apply_action_to_portfolio(self.state_index, action, self.cash, self.stock)
 
         # Advance to next state
-        self.state = self.get_next_state(self.state, action)
+        self.state = self.get_next_state(self.state_index, self.state, action)
         self.state_index += 1
         self.actions = self.get_possible_actions(self.state)
         current_portfolio_value = self.get_portfolio_value(self.state_index, self.cash, self.stock)
@@ -154,7 +154,7 @@ class DynaQLearner:
     def update_history_table(self, state_index: int, state: pd.Series, action: str):
         state_str = self.state_str(state)
         if state_index not in self.history_table:
-            self.history_table[state_index][state_str] = {action}
+            self.history_table[state_index] = {state_str: {action}}
         elif state_str not in self.history_table[state_index]:
             self.history_table[state_index][state_str] = {action}
         else:
@@ -208,12 +208,15 @@ class DynaQLearner:
 
     def update_asset_table(self, state_index: int, state: pd.Series, cash: float, stock: float, portfolio_value: float):
         state_str = self.state_str(state)
-        if state_index in self.asset_table and state_str in self.asset_table[state_index]:
-            current_value = self.asset_table[state_index][self.asset_portfolio_value_index]
-            if portfolio_value > current_value:
-                self.asset_table[state_index] = (cash, stock, portfolio_value)
+        if state_index not in self.asset_table:
+            self.asset_table[state_index] = {state_str: (cash, stock, portfolio_value)}
         else:
-            self.asset_table[state_index][state_str] = (cash, stock, portfolio_value)
+            if state_str not in self.asset_table[state_index]:
+                self.asset_table[state_index] = {state_str: (cash, stock, portfolio_value)}
+            else:
+                current_value = self.asset_table[state_index][state_str][self.asset_portfolio_value_index]
+                if portfolio_value > current_value:
+                    self.asset_table[state_index][state_str] = (cash, stock, portfolio_value)
 
     def state_str(self, state: pd.Series):
         return json.dumps(state.to_dict(), sort_keys=True)
@@ -225,19 +228,16 @@ class DynaQLearner:
         print('\tDyna iterations: ', iterations)
         for i in range(iterations):
             # Get random state, but exclude final state (state of last index)
-            state_index = random.choice(self.history_table.keys())
-            state = random.choice(self.history_table[state_index].keys())
-            state_str = self.state_str(state)
-            action = random.choice(self.history_table[state_index][state_str].keys())
+            state_index = random.choice(list(self.history_table.keys()))
+            state_str = random.choice(list(self.history_table[state_index].keys()))
+            state = self.str_to_state(state_str)
+            action = random.choice(list(self.history_table[state_index][state_str]))
 
-            reward = self.simulate_go_to_next_state(state_index, state, action)
-            next_state = self.state_df[state_index + 1]
+            next_state, reward = self.simulate_go_to_next_state(state_index, state, state_str, action)
 
             self.update_q(state, action, next_state, reward)
 
-    def simulate_go_to_next_state(self, state_index: int, state: pd.Series, action: str):
-        state_str = self.state_str(state)
-
+    def simulate_go_to_next_state(self, state_index: int, state: pd.Series, state_str: str, action: str):
         # Get assets from the best case scenario for this state_index
         # and apply the simulated action to get assets for the next state
         cash, stock, portfolio_value = self.asset_table[state_index][state_str]
@@ -246,14 +246,14 @@ class DynaQLearner:
         # Calculate portfolio amount for next state and update asset table
         # if this is the new best case
         next_state_index = state_index + 1
-        next_state = self.get_next_state(state, action)
+        next_state = self.get_next_state(state_index, state, action)
         next_portfolio_value = self.get_portfolio_value(next_state_index, next_cash, next_stock)
         self.update_asset_table(next_state_index, next_state, next_cash, next_stock, next_portfolio_value)
 
         # Calculate reward for taking this simulated action
         reward = self.reward(portfolio_value, next_portfolio_value)
 
-        return reward
+        return next_state, reward
 
     def apply_action_to_portfolio(self, state_index, action, cash, stock):
         # Apply action to portfolio
