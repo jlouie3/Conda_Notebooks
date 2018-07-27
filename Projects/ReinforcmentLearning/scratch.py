@@ -72,7 +72,12 @@ reward_df = data[['close']]
 # q_learner.train(50, 400)
 # q_learner.export_policy('policy.txt')
 
-from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
+# from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
+# q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25])
+# q_learner.train(50, 400)
+# q_learner.export_policy('policy.txt')
+
+from Projects.ReinforcmentLearning.scratch2 import DynaQLearner
 q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25])
 q_learner.train(50, 400)
 q_learner.export_policy('policy.txt')
