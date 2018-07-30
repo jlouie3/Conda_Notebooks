@@ -102,6 +102,9 @@ class Portfolio:
         self.stock = stock
         self.calculate_portfolio_value(state_index, price_df)
 
+    def __str__(self):
+        return "Cash: {0}\tStock: {1}\t Value: {2}".format(self.cash, self.stock, self.value)
+
     def calculate_portfolio_value(self, state_index: int, price_df: pd.DataFrame):
         price = price_df.iloc[state_index]['close']
         self.value = self.cash + self.stock * price
