@@ -1,27 +1,9 @@
+import os
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-
-def get_rolling_mean(values, window):
-    """Return rolling mean of given values, using specified window size."""
-    return values.rolling(center=False, window=window).mean()
-
-
-def get_rolling_std(values, window):
-    """Return rolling standard deviation of given values, using specified window size."""
-    return values.rolling(center=False, window=window).std()
-
-
-def get_bollinger_bands(rm, rstd, b=2):
-    """Return upper and lower Bollinger Bands."""
-    upper_band = rm + b*rstd
-    lower_band = rm - b*rstd
-    return upper_band, lower_band
-
-def get_momentum(values, window):
-    momentum = values - values.shift(window)
-    return momentum
+import Projects.ReinforcmentLearning.Strategy as Strategy
 
 
 # Read data
@@ -44,25 +26,10 @@ data.head()
 
 ########################
 ########################
-
-# Define state features
-window = 20
-
-data['rm'] = get_rolling_mean(data['close'], window)
-data['rstd'] = get_rolling_std(data['close'], window)
-data['ubb_1.5'], data['lbb_1.5'] = get_bollinger_bands(data['rm'],data['rstd'],b=1.5)
-data['ubb_2.0'], data['lbb_2.0'] = get_bollinger_bands(data['rm'],data['rstd'],b=2)
-data['ubb_2.5'], data['lbb_2.5'] = get_bollinger_bands(data['rm'],data['rstd'],b=2.5)
-data['mom_2'] = get_momentum(data['close'], window=2)
-data['rstd_5'] = get_rolling_std(data['close'], 2)
-
-state_df = pd.DataFrame(data={
-    'bb_.5': np.floor(((data['close'] - data['rm']) / data['rstd']) * 2) / 2, # Floors rolling std to nearest half
-    'momentum': pd.Series(['up' if x>0 else 'down' if x<0 else 'same' for x in data['mom_2']],index=data.index),
-    'hasCash': None,
-    'hasStock': None
-})
-
+# Choose strategy to use
+# state_df = Strategy.alpha(data)
+state_df = Strategy.beta(data)
+print(state_df.head())
 reward_df = data[['close']]
 ########################
 ########################
@@ -72,12 +39,23 @@ reward_df = data[['close']]
 # q_learner.train(50, 400)
 # q_learner.export_policy('policy.txt')
 
+train_data = state_df.loc['2013-01-01':'2016-12-31']
+test_data = state_df.loc['2017-01-01':'2017-12-31']
+train_price_data = reward_df.loc['2013-01-01':'2016-12-31']
+test_price_data = reward_df.loc['2017-01-01':'2017-12-31']
 
-from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
-d_q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25], p_explore=.2)
-d_q_learner.train(100, 400)
-d_q_learner.export_policy('policy.txt')
-d_q_learner.export_q_table('q_table.txt')
-policy = d_q_learner.q_table.get_policy()
+# from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
+# #d_q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25], p_explore=.2)
+# d_q_learner = DynaQLearner(state_df=train_data, price_df=train_price_data, p_explore=.2)
+# d_q_learner.train(100, 400)
+# d_q_learner.export_policy('output' + os.sep + 'policy.txt')
+# d_q_learner.export_q_table('output' + os.sep + 'q_table.txt')
 
+
+with open('output' + os.sep + 'policy.txt', 'r') as f:
+    policy = json.loads(f.readline())
 from Projects.ReinforcmentLearning.MarketSimulator import MarketSimulator
+market_sim = MarketSimulator(test_data, test_price_data, policy, 5)
+market_sim.run()
+market_sim.plot_moves()
+pass
