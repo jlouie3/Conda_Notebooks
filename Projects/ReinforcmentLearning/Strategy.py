@@ -65,7 +65,7 @@ def beta(data: pd.DataFrame):
 
     State members:
         Bollinger bands: +/- (2 * std_dev)
-        Momentum: 1-day momentum
+        Bollinger bands: bollinger band value of prev state
 
     :return: state_df: pd.DataFrame of transformed data
     """
@@ -86,8 +86,7 @@ def beta(data: pd.DataFrame):
 
     state_df = pd.DataFrame(data={
         'bb_2': data['bb_2'],
-        'momentum': pd.Series(['up' if x > 0 else 'down' if x < 0 else 'same' for x in data['mom_2']],
-                              index=data.index),
+        'bb_2_prev': data['bb_2'].shift(-1),
         'hasCash': None,
         'hasStock': None
     })

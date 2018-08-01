@@ -38,19 +38,20 @@ class MarketSimulator:
                                  "Policy must be trained on a dataset with same metadata.")
 
     def run(self):
-        print(self.market_df.loc['2017-10-09':'2017-10-23'])
-        print(self.policy)
         for index, row in self.market_df.iterrows():
+            # Initializing state
             state = copy.deepcopy(row)
             update_state_assets(state, self.portfolio)
             state_str = json.dumps(state.to_dict(), sort_keys=True)
 
+            # Get action and adjust assets based on action
             try:
                 action = self.policy[state_str]
                 if action == Action.BUY or action == Action.SELL:
                     self.moves[index] = (self.state_index, action)
                     self.portfolio.apply_action(self.state_index, action, self.price_df)
             except IndexError:
+                # Known IndexError occurs because portfolio.apply_action() increments state index
                 if self.state_index == self.price_df.size - 1:
                     pass
                 else:

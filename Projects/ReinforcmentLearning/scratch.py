@@ -37,22 +37,22 @@ reward_df = data[['close']]
 # from Projects.ReinforcmentLearning.Q_Learner import Q_Learner
 # q_learner = Q_Learner(state_df=state_df.iloc[20:25], reward_df=reward_df.iloc[20:25])
 # q_learner.train(50, 400)
-# q_learner.export_policy('policy.txt')
+# q_learner.export_policy('policy_beta_100.txt')
 
 train_data = state_df.loc['2013-01-01':'2016-12-31']
-test_data = state_df.loc['2017-01-01':'2017-12-31']
+test_data = state_df.loc['2017/01/01':'2017/12/31']
 train_price_data = reward_df.loc['2013-01-01':'2016-12-31']
-test_price_data = reward_df.loc['2017-01-01':'2017-12-31']
+test_price_data = reward_df.loc['2017/01/01':'2017/12/31']
 
-# from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
-# #d_q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25], p_explore=.2)
-# d_q_learner = DynaQLearner(state_df=train_data, price_df=train_price_data, p_explore=.2)
-# d_q_learner.train(100, 400)
-# d_q_learner.export_policy('output' + os.sep + 'policy.txt')
-# d_q_learner.export_q_table('output' + os.sep + 'q_table.txt')
+from Projects.ReinforcmentLearning.DynaQLearner import DynaQLearner
+#d_q_learner = DynaQLearner(state_df=state_df.iloc[20:25], price_df=reward_df.iloc[20:25], p_explore=.2)
+d_q_learner = DynaQLearner(state_df=train_data, price_df=train_price_data, p_explore=.2)
+d_q_learner.train(100, 400)
+d_q_learner.export_policy('output' + os.sep + 'policy.txt')
+d_q_learner.export_q_table('output' + os.sep + 'q_table.txt')
+print('Q-Learning complete.\n')
 
-
-with open('output' + os.sep + 'policy.txt', 'r') as f:
+with open('output' + os.sep + 'policy_beta_100.txt', 'r') as f:
     policy = json.loads(f.readline())
 from Projects.ReinforcmentLearning.MarketSimulator import MarketSimulator
 market_sim = MarketSimulator(test_data, test_price_data, policy, 5)
