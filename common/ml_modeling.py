@@ -1,6 +1,6 @@
 from decimal import Decimal
 import pandas as pd
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.metrics import accuracy_score, roc_curve, auc, f1_score
 
 # Modeling libraries
@@ -38,7 +38,7 @@ def _get_min_significant_precision(df: pd.DataFrame):
 
     return precision
 
-def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFrame, pos_label: int, n_folds: int=5, shuffle: bool=True):
+def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFrame, pos_label: int, n_folds: int=5, shuffle: bool=True, stratified_k_fold=False):
     """
     Trains and scores a binary classification problem using the machine learning model that was passed in.
     Trains using kfolds data selection. Each fold creates a train/test dataset which is the evaluated using
@@ -50,17 +50,23 @@ def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFram
     :param pos_label: label value considered 'positive' (used for scoring)
     :param n_folds: number of folds to use when splitting the input data into test/train groups
     :param shuffle: flag indicating to randomly split data during kfolds
+    :param stratified_k_fold: flag indicating to use stratified kfold which maintains the original ratio of classes with each fold
     :return: returns average values of classification accuracy, AUC, and F1 score
     """
 
     PRECISION = _get_min_significant_precision(df)
 
-    kf = KFold(n_splits=n_folds, shuffle=shuffle)
+    if stratified_k_fold:
+        kf = StratifiedKFold(n_splits=n_folds, shuffle=shuffle)
+        folds = kf.split(df,labels)
+    else:
+        kf = KFold(n_splits=n_folds, shuffle=shuffle)
+        folds = kf.split(df)
 
     acc_scores = []
     auc_scores = []
     f1_scores = []
-    for train, test in kf.split(df):
+    for train, test in folds:
         train_x = df.iloc[train]
         train_y = labels.iloc[train]
         test_x = df.iloc[test]

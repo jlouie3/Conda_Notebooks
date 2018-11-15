@@ -17,7 +17,13 @@ def get_data_quality_report(df: pd.DataFrame):
     """
 
     '''
-    COMMON DQR CHARACTERISTICS
+    Used for applying precision formatting
+    '''
+    def two_decimal_precision(x):
+        return "%.2F" % x
+    
+    '''
+    DQR CHARACTERISTICS COMMON B/W CONTINUOUS/CATEGORIAL FEATURES
     '''
     # Total number of rows in dataset
     num_rows = df.shape[0]
@@ -28,12 +34,13 @@ def get_data_quality_report(df: pd.DataFrame):
 
     # Percent of records as nulls
     nulls_pct = nulls / num_rows
+    nulls_pct = nulls_pct.apply(two_decimal_precision)
     nulls_pct.name = 'nulls pct'
 
     # Number of unique values in each column
     cardinality = df.nunique()
     cardinality.name = 'cardinality'
-
+    
     '''
     CREATE DQR FOR NUMERIC/CONTINUOUS FEATURES
     '''
@@ -46,37 +53,7 @@ def get_data_quality_report(df: pd.DataFrame):
     continuous_dqr = continuous_dqr.append(nulls[continuous_cols])
     continuous_dqr = continuous_dqr.append(nulls_pct[continuous_cols])
     continuous_dqr = continuous_dqr.append(cardinality[continuous_cols])
-
-    '''
-    CREATE DQR FOR CATEGORICAL FEATURES
-    '''
-    categorical_cols = [col_name for col_name in df.dtypes.where(df.dtypes == 'category').dropna().index if col_name != df.index.name]
-    categorical_df = df[categorical_cols]
-
-    # Calculate mode data for each column and aggregate results into single dataframe
-    categorical_mode_list = []
-    for col in categorical_df:
-        categorical_mode_list.append(get_mode_and_second_mode(categorical_df[col]))
-    categorical_mode = reduce(lambda x, y: x.merge(y, left_index=True, right_index=True), categorical_mode_list)
-
-    # Aggregate all categorical data quality rows
-    categorical_dqr = pd.DataFrame()
-    categorical_dqr = categorical_dqr.append(pd.Series([num_rows for col in categorical_df.columns], name='count', index=categorical_df.columns))
-    categorical_dqr = categorical_dqr.append(categorical_mode)
-    categorical_dqr = categorical_dqr.append(nulls[categorical_cols])
-    categorical_dqr = categorical_dqr.append(nulls_pct[categorical_cols])
-    categorical_dqr = categorical_dqr.append(cardinality[categorical_cols])
-
-    '''
-    Apply formatting
-    '''
-    def two_decimal_precision(x):
-        return "%.2F" % x
-    continuous_dqr.loc['nulls pct'] = continuous_dqr.loc['nulls pct'].apply(two_decimal_precision)
-    categorical_dqr.loc['nulls pct'] = categorical_dqr.loc['nulls pct'].apply(two_decimal_precision)
-    categorical_dqr.loc['mode pct'] = categorical_dqr.loc['mode pct'].apply(two_decimal_precision)
-    categorical_dqr.loc['2nd mode pct'] = categorical_dqr.loc['2nd mode pct'].apply(two_decimal_precision)
-
+    
     '''
     Reorder rows
     '''
@@ -92,18 +69,51 @@ def get_data_quality_report(df: pd.DataFrame):
         '75%',
         'max',
         'cardinality'])
+    
 
-    categorical_dqr = categorical_dqr.reindex([
-        'count',
-        'nulls',
-        'nulls pct',
-        'mode',
-        'mode count',
-        'mode pct',
-        '2nd mode',
-        '2nd mode count',
-        '2nd mode pct',
-        'cardinality'])
+    '''
+    CREATE DQR FOR CATEGORICAL FEATURES
+    '''
+    categorical_dqr = pd.DataFrame()
+    categorical_cols = [col_name for col_name in df.dtypes.where(df.dtypes == 'category').dropna().index if col_name != df.index.name]
+    categorical_df = df[categorical_cols]
+
+    # Calculate mode data for each column and aggregate results into single dataframe
+    categorical_mode_list = []
+    for col in categorical_df:
+        categorical_mode_list.append(get_mode_and_second_mode(categorical_df[col]))
+    
+    if len(categorical_mode_list) > 0:
+        categorical_mode = reduce(lambda x, y: x.merge(y, left_index=True, right_index=True), categorical_mode_list)
+
+        # Aggregate all categorical data quality rows
+        categorical_dqr = pd.DataFrame()
+        categorical_dqr = categorical_dqr.append(pd.Series([num_rows for col in categorical_df.columns], name='count', index=categorical_df.columns))
+        categorical_dqr = categorical_dqr.append(categorical_mode)
+        categorical_dqr = categorical_dqr.append(nulls[categorical_cols])
+        categorical_dqr = categorical_dqr.append(nulls_pct[categorical_cols])
+        categorical_dqr = categorical_dqr.append(cardinality[categorical_cols])
+
+        # Format decimal precision
+        #continuous_dqr.loc['nulls pct'] = continuous_dqr.loc['nulls pct'].apply(two_decimal_precision)
+        #categorical_dqr.loc['nulls pct'] = categorical_dqr.loc['nulls pct'].apply(two_decimal_precision)
+        categorical_dqr.loc['mode pct'] = categorical_dqr.loc['mode pct'].apply(two_decimal_precision)
+        categorical_dqr.loc['2nd mode pct'] = categorical_dqr.loc['2nd mode pct'].apply(two_decimal_precision)
+        
+        '''
+        Reorder rows
+        '''
+        categorical_dqr = categorical_dqr.reindex([
+            'count',
+            'nulls',
+            'nulls pct',
+            'mode',
+            'mode count',
+            'mode pct',
+            '2nd mode',
+            '2nd mode count',
+            '2nd mode pct',
+            'cardinality'])
 
     '''
     Identify columns that were not listed as continuous or categorical
