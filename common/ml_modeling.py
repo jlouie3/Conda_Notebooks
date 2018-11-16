@@ -38,7 +38,7 @@ def _get_min_significant_precision(df: pd.DataFrame):
 
     return precision
 
-def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFrame, pos_label: int, n_folds: int=5, shuffle: bool=True, stratified_k_fold=False):
+def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFrame, pos_label: int, n_folds: int=5, shuffle: bool=True, stratified_k_fold: bool=False, print_results: bool=True, description: str='Results'):
     """
     Trains and scores a binary classification problem using the machine learning model that was passed in.
     Trains using kfolds data selection. Each fold creates a train/test dataset which is the evaluated using
@@ -51,6 +51,8 @@ def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFram
     :param n_folds: number of folds to use when splitting the input data into test/train groups
     :param shuffle: flag indicating to randomly split data during kfolds
     :param stratified_k_fold: flag indicating to use stratified kfold which maintains the original ratio of classes with each fold
+    :param print_results: flag determining whether or not results should be printed
+    :param description: description of model being trained; will be displayed if results are printed
     :return: returns average values of classification accuracy, AUC, and F1 score
     """
 
@@ -91,6 +93,17 @@ def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFram
     avg_auc = round(Decimal(sum(auc_scores) / len(auc_scores)), PRECISION)
     avg_f1 = round(Decimal(sum(f1_scores) / len(f1_scores)), PRECISION)
 
+    if print_results:
+        horizontal_bar = '=' * (len(description)+4)
+        description_line = '= ' + description + ' ='
+        print(horizontal_bar)
+        print(description_line)
+        print(horizontal_bar)
+        print('Accuracy:\t', avg_acc)
+        print('AUC:\t\t', avg_auc)
+        print('F1:\t\t', avg_f1)
+        print('\n')
+    
     return avg_acc, avg_auc, avg_f1
 
 
