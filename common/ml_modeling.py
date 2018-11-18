@@ -136,9 +136,11 @@ def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFram
         print('Average time to train: ', Stopwatch.get_formatted_time(avg_time))
         print('\n')
     
-    return avg_acc, avg_auc, avg_f1
-
-
-
-
-
+    metrics = {"accuracy": avg_acc,
+               "auc": avg_auc,
+               "precision": avg_precision,
+               "recall": avg_recall,
+               "f1": avg_f1,
+               "average_training_time": avg_time}
+    
+    return classifier, metrics
