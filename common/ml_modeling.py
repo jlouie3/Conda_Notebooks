@@ -3,11 +3,6 @@ import pandas as pd
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.metrics import accuracy_score, roc_curve, auc, precision_score, recall_score, f1_score
 
-# Modeling libraries
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-
 # Personal libraries
 from util import Stopwatch
 
@@ -144,3 +139,43 @@ def train_and_score_classifier(classifier, df: pd.DataFrame, labels: pd.DataFram
                "average_training_time": avg_time}
     
     return classifier, metrics
+
+def show_precision_recall_curve(classifier, x_test: pd.DataFrame, y_test: pd.DataFrame):
+    """
+    Displays precision-recall curve for a trained classifier and test dataset
+    1. Use decision function or prediction probability estimate function to get the score
+    2. Get average precision
+    3. Get precision-recall curve and graph it
+    
+    :param classifier: Classifier to be evaluated
+    :param x_test: Test dataset used to get prediction score
+    :param y_test: Test labels used to generate precision-recall curve
+    """
+    
+    # Get prediction probability estimate
+    if hasattr(classifier,"predict_proba"):
+        y_score = pd.DataFrame(classifier.predict_proba(x_test))[1]
+    elif hasattr(classifier,"decision_function"):
+        y_score = pd.DataFrame(classifier.decision_function(x_test))
+    else:
+        raise Exception("Classifier with unknown function for finding decision function/prediction probability estimates.")
+    
+    # Get precision-recall curve
+    average_precision = average_precision_score(y_test, y_score)
+    precision, recall, _ = precision_recall_curve(y_test, y_score)
+
+    # Plot the precision-recall curve
+    # In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
+    step_kwargs = ({'step': 'post'}
+                   if 'step' in signature(plt.fill_between).parameters
+                   else {})
+    plt.step(recall, precision, color='b', alpha=0.2,
+             where='post')
+    plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(
+              average_precision))
