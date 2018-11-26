@@ -1,6 +1,12 @@
 # Ignore all directories called "data"
 **/data/
 
+# Ignore .jpg files in train/test directories
+*/train/*.jpg
+*/test/*.jpg
+*/train/*.jpeg
+*/test/*.jpeg
+
 # ignore any directories that start with underscore char
 _*/
 
