@@ -7,6 +7,9 @@
 */train/*.jpeg
 */test/*.jpeg
 
+# Ignore trained models
+*.model
+
 # ignore any directories that start with underscore char
 _*/
 
